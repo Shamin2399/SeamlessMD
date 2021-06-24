@@ -1,0 +1,210 @@
+<!-- HTML and JavaScript files combined for convenience-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>JavaScript - read JSON from URL</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+</head>
+
+<body>
+    <!-- Formatting for the Table-->
+    <style>       
+        th {
+            padding: 10px;
+            border: 1px solid black;
+            background-color: gray;
+        }
+        table,
+        td {
+          padding: 10px;
+          border: 1px solid black;
+          border-collapse: collapse;
+        }
+      </style>
+    <div class="mypanel"></div>
+
+<script>
+    //Arrays to hold ID, Age, Gender, and Names of patients
+    const patientId = [];
+    const patientAge = [];
+    const patientGender = [];
+    const firstName = [];
+    const lastName = [];
+    //Patient's Birthdate - how it's provided in the database
+    var patientBirth = 0;
+    //To calculate average age
+    var averageAge = 0;
+    var ageCounter = 0;
+
+    //The first cell in each array is the header for the array, to simplify the table
+    patientId[0] = "Patient Id";
+    patientAge[0] = "Age";
+    patientGender[0] = "Gender";
+    firstName[0] = "Given Name";
+    lastName[0] = "Family Name";
+
+    //Reading data from the JSON file of the first page of results
+    $.getJSON('http://hapi.fhir.org/baseR4/Patient?_pretty=true&_format=json', function(data) {
+        
+        //Looping through 20 times - 20 entries on the page
+        for (var i = 1; i < 21; i++) {        
+            //Reading First and Last Names, ID, and Gender
+            lastName[i] =  data.entry[i].resource.name[0].family
+            firstName [i] = data.entry[i].resource.name[0].given
+            patientId [i] = data.entry[i].resource.id
+            patientGender [i] = data.entry[i].resource.gender
+
+            //To calculate age we need to extract the birthdate, and there are several errors that pop up when doing so
+            try{    
+                //Calculating age
+                patientBirth = data.entry[i].resource.birthDate
+                var year = Number(patientBirth.substr(0, 4));
+                var month = Number(patientBirth.substr(5, 2));
+                var day = Number(patientBirth.substr(8, 2));
+                
+                var age = 2021 - year;
+                if (6 < month || (6 == month && 24 < day)) {
+                    age--;
+                }
+                if (age > 0 && age < 100){
+                    patientAge[i] = age
+                }
+            }
+            catch(err){}
+
+        }        
+    });
+
+    //Reading from the JSON file of the second page of results, repetition of the process above
+    $.getJSON('http://hapi.fhir.org/baseR4?_getpages=9b121a82-9891-4841-9c4f-62d34eb000e1&_pretty=true&_count=20&_getpagesoffset=20&_bundletype=searchset&_format=json', function(data) { 
+      
+        for (var j = 21; j < 31; j++) {
+            lastName[j] =  data.entry[j-20].resource.name[0].family
+            firstName [j] = data.entry[j-20].resource.name[0].given
+            patientId [j] = data.entry[j-20].resource.id
+            patientGender [j] = data.entry[j-20].resource.gender
+            patientBirth = data.entry[j-20].resource.birthDate
+
+            var year = Number(patientBirth.substr(0, 4));
+            var month = Number(patientBirth.substr(5, 2));
+            var day = Number(patientBirth.substr(8, 2));
+
+            try{    
+                //Calculating age
+                patientBirth = data.entry[i].resource.birthDate
+                var year = Number(patientBirth.substr(0, 4));
+                var month = Number(patientBirth.substr(5, 2));
+                var day = Number(patientBirth.substr(8, 2));
+                
+                var age = 2021 - year;
+                if (6 < month || (6 == month && 24 < day)) {
+                    age--;
+                }
+                if (age > 0 && age < 100){
+                    patientAge[j] = age
+                }
+            }
+            catch(err){}
+        }        
+    });
+
+    //Getter functions
+    function getLastName(index){
+        return lastName[index]
+    }
+    function getFirstName(index){
+        return firstName[index]
+    }
+    function getId(index){
+        return patientId[index]
+    }
+    function getAge(index){
+        return patientAge[index]
+    }
+    function getGender(index){
+        return patientGender[index]
+    }
+    //Function for calculting the average age
+    function getAverageAge(){
+        for(const x of patientAge){
+            if (x > 0 && x < 100){
+            averageAge += x;
+            ageCounter ++;}
+        }
+        //To avoid dividing by 0
+        if (ageCounter != 0) {
+            averageAge = averageAge/ageCounter;
+        }
+        else {
+            averageAge = -1 //If there were no valid ages
+        }
+        return averageAge;
+    }
+    //Prints average age and number of patients (if valid)
+    document.write ("Average Age of Patients: " + getAverageAge() + "<br>")
+    document.write ("Number of Valid Patients: " + ageCounter + "<br>")
+    document.write ("Click Below to Expand Table" + "<br>")
+
+    //The Table - prints out 31 rows with 5 columns each
+    function generateTable() {
+        //Defining dimensions of the table
+        var body = document.getElementsByTagName("body")[0];
+        var tbl = document.createElement("table");
+        var tblBody = document.createElement("tbody");
+
+        //Loop through 30 rows
+        for (var i = 0; i < 31; i++) {
+            var row = document.createElement("tr");
+
+            //Necessary loop for the code to function
+            for (var j = 0; j < 1; j++){
+                
+                //ID entry
+                var cellID = document.createElement("td");
+                var cellTextID = document.createTextNode(getId(i));
+                cellID.appendChild(cellTextID);
+                row.appendChild(cellID);
+                
+                //Last Name entry
+                var cellLastName = document.createElement("td");
+                var cellTextLastName = document.createTextNode(getLastName(i));
+                cellLastName.appendChild(cellTextLastName);
+                row.appendChild(cellLastName);
+
+                //First Name entry
+                var cellFirstName = document.createElement("td");
+                var cellTextFirstName = document.createTextNode(getFirstName(i));
+                cellFirstName.appendChild(cellTextFirstName);
+                row.appendChild(cellFirstName);
+
+                //Gender Entry
+                var cellGender = document.createElement("td");
+                var cellTextGender = document.createTextNode(getGender(i));
+                cellGender.appendChild(cellTextGender);
+                row.appendChild(cellGender);
+
+                //Age entry, validity is checked before
+                var cellAge = document.createElement("td");
+                var cellTextAge = document.createTextNode(getAge(i));
+                cellAge.appendChild(cellTextAge);
+                row.appendChild(cellAge);
+
+            }
+            //Add the row to the table
+            tblBody.appendChild(row);
+            
+        }
+
+        tbl.appendChild(tblBody);
+        body.appendChild(tbl);
+        tbl.setAttribute("border", "2");
+
+    }
+    
+</script>
+<p id = "Age"></p>
+<!-- The button to generate the table-->
+<input type="button" value="Generate Full Table." onclick="generateTable()">
+<br></br>
+</body>
+</html>
